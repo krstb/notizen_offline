@@ -1,0 +1,24 @@
+{
+  "short_name": "Arbeitstage vorlage app",
+  "name": "Arbeitstage vorlage",
+  "description": "Berechnung der verbleibenden Nettoarbeitstage bis 2031",
+  "start_url": "index.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#000000",
+  "background_color": "#000000",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any"
+    }
+  ]
+}
