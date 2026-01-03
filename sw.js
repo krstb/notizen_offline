@@ -1,42 +1,56 @@
-const CACHE_NAME = 'notizen offline-v7'; // Ändere v2 zu v3, v4 etc., um Updates zu erzwingen
+const CACHE_NAME = 'uhrzeit-v6';
 const ASSETS = [
   'index.html',
-  'manifest.json'
+  'manifest.json',
+  'https://cdn.tailwindcss.com',
+  'icon-192.png',
+  'icon-512.png'
 ];
 
-// Installation: Dateien in den Cache laden
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.addAll(ASSETS);
     })
   );
-  // Aktiviert den neuen Service Worker sofort, ohne auf das Schließen der App zu warten
   self.skipWaiting();
 });
 
-// Aktivierung: Alten Cache löschen, wenn die Version (CACHE_NAME) geändert wurde
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames.map((cache) => {
-          if (cache !== CACHE_NAME) {
-            console.log('Lösche alten Cache:', cache);
-            return caches.delete(cache);
-          }
+          if (cache !== CACHE_NAME) return caches.delete(cache);
         })
       );
     })
   );
+  return self.clients.claim();
 });
 
-// Strategie: Network-First
-// Versucht erst das Netzwerk, bei Fehler (Offline) wird der Cache genutzt
+// DEINE WUNSCH-STRATEGIE: Erst Internet, dann Speicher
 self.addEventListener('fetch', (event) => {
   event.respondWith(
-    fetch(event.request).catch(() => {
-      return caches.match(event.request);
-    })
+    fetch(event.request)
+      .then((response) => {
+        // Wenn Internet da ist: Antwort in den Cache legen und anzeigen
+        return caches.open(CACHE_NAME).then((cache) => {
+          cache.put(event.request, response.clone());
+          return response;
+        });
+      })
+      .catch(() => {
+        // WENN INTERNET FEHLT: Hier wird der Speicher geladen
+        return caches.match(event.request).then((cachedResponse) => {
+          if (cachedResponse) {
+            return cachedResponse;
+          }
+          // Sicherheitsnetz: Falls es eine Seitennavigation ist, index.html erzwingen
+          if (event.request.mode === 'navigate') {
+            return caches.match('index.html');
+          }
+        });
+      })
   );
 });
