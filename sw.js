@@ -1,47 +1,42 @@
-const CACHE_NAME = 'notizen_offline-v10';
+const CACHE_NAME = 'notizen offline-v7'; // Ändere v2 zu v3, v4 etc., um Updates zu erzwingen
 const ASSETS = [
   'index.html',
-  'manifest.json',
-  'https://cdn.tailwindcss.com',
-  'icon-192.png',
-  'icon-512.png'
+  'manifest.json'
 ];
 
+// Installation: Dateien in den Cache laden
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
+    caches.open(CACHE_NAME).then((cache) => {
+      return cache.addAll(ASSETS);
+    })
   );
+  // Aktiviert den neuen Service Worker sofort, ohne auf das Schließen der App zu warten
   self.skipWaiting();
 });
 
+// Aktivierung: Alten Cache löschen, wenn die Version (CACHE_NAME) geändert wurde
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((keys) => Promise.all(
-      keys.map((key) => {
-        if (key !== CACHE_NAME) return caches.delete(key);
-      })
-    ))
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames.map((cache) => {
+          if (cache !== CACHE_NAME) {
+            console.log('Lösche alten Cache:', cache);
+            return caches.delete(cache);
+          }
+        })
+      );
+    })
   );
-  return self.clients.claim();
 });
 
+// Strategie: Network-First
+// Versucht erst das Netzwerk, bei Fehler (Offline) wird der Cache genutzt
 self.addEventListener('fetch', (event) => {
-  // Nur für Anfragen auf der eigenen Seite (keine externen APIs außer Tailwind)
   event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
-      // Wenn wir offline sind oder ein Refresh stattfindet: Sofort Cache liefern
-      const fetchPromise = fetch(event.request).then((networkResponse) => {
-        if (networkResponse && networkResponse.status === 200) {
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, networkResponse.clone());
-          });
-        }
-        return networkResponse;
-      }).catch(() => {
-        // Im Offline-Fall: Fehler unterdrücken, wir haben ja den Cache
-      });
-
-      return cachedResponse || fetchPromise;
+    fetch(event.request).catch(() => {
+      return caches.match(event.request);
     })
   );
 });
