@@ -1,4 +1,4 @@
-const CACHE_NAME = 'uhrzeit-v8';
+const CACHE_NAME = 'notizen_offline-v9';
 const ASSETS = [
   'index.html',
   'manifest.json',
@@ -9,48 +9,40 @@ const ASSETS = [
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(ASSETS);
-    })
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
   );
   self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames.map((cache) => {
-          if (cache !== CACHE_NAME) return caches.delete(cache);
-        })
-      );
-    })
+    caches.keys().then((keys) => Promise.all(
+      keys.map((key) => {
+        if (key !== CACHE_NAME) return caches.delete(key);
+      })
+    ))
   );
   return self.clients.claim();
 });
 
-// DEINE WUNSCH-STRATEGIE: Erst Internet, dann Speicher
+// Die stabilste Strategie gegen den Refresh-Fehler
 self.addEventListener('fetch', (event) => {
   event.respondWith(
-    fetch(event.request)
-      .then((response) => {
-        // Wenn Internet da ist: Antwort in den Cache legen und anzeigen
-        return caches.open(CACHE_NAME).then((cache) => {
-          cache.put(event.request, response.clone());
-          return response;
-        });
-      })
-      .catch(() => {
-        // WENN INTERNET FEHLT: Hier wird der Speicher geladen
-        return caches.match(event.request).then((cachedResponse) => {
-          if (cachedResponse) {
-            return cachedResponse;
-          }
-          // Sicherheitsnetz: Falls es eine Seitennavigation ist, index.html erzwingen
-          if (event.request.mode === 'navigate') {
-            return caches.match('index.html');
-          }
-        });
-      })
+    caches.match(event.request).then((cachedResponse) => {
+      // 1. Wenn im Cache, sofort diese Version liefern (kein Warten aufs Netz)
+      const fetchPromise = fetch(event.request).then((networkResponse) => {
+        // 2. Im Hintergrund neue Version in den Cache legen
+        if (networkResponse && networkResponse.status === 200) {
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, networkResponse.clone());
+          });
+        }
+        return networkResponse;
+      }).catch(() => {
+        // Netzwerkfehler ignorieren, da wir ja den Cache haben
+      });
+
+      return cachedResponse || fetchPromise;
+    })
   );
 });
