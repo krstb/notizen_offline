@@ -1,21 +1,25 @@
-const CACHE_NAME = 'notizen offline'; // Ändere v2 zu v3, v4 etc., um Updates zu erzwingen
+const CACHE_NAME = 'notizen-offline-v1';
 const ASSETS = [
   'index.html',
-  'manifest.json'
+  'manifest.json',
+  'https://cdn.tailwindcss.com',
+  'icon-192.png',
+  'icon-512.png'
 ];
 
 // Installation: Dateien in den Cache laden
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
+      // Wir verwenden cache.addAll, um alle wichtigen Dateien lokal zu speichern
       return cache.addAll(ASSETS);
     })
   );
-  // Aktiviert den neuen Service Worker sofort, ohne auf das Schließen der App zu warten
+  // Aktiviert den neuen Service Worker sofort
   self.skipWaiting();
 });
 
-// Aktivierung: Alten Cache löschen, wenn die Version (CACHE_NAME) geändert wurde
+// Aktivierung: Alten Cache löschen, wenn die Version geändert wurde
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((cacheNames) => {
@@ -31,8 +35,8 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Strategie: Network-First
-// Versucht erst das Netzwerk, bei Fehler (Offline) wird der Cache genutzt
+// Strategie: Network-First mit Fallback auf Cache
+// Das stellt sicher, dass du immer die neueste Version hast, wenn du online bist
 self.addEventListener('fetch', (event) => {
   event.respondWith(
     fetch(event.request).catch(() => {
