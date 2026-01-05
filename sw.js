@@ -1,4 +1,4 @@
-const CACHE_NAME = 'notizen_offline-v7'; // Ändere v2 zu v3, v4 etc., um Updates zu erzwingen
+const CACHE_NAME = 'notizen_offline-v8'; // Ändere v2 zu v3, v4 etc., um Updates zu erzwingen
 const ASSETS = [
   'index.html',
   'manifest.json'
