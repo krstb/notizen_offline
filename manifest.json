@@ -1,5 +1,5 @@
 {
-  "short_name": "Notizen Offline v2",
+  "short_name": "Notizen Offline",
   "name": "Notizen offline eingeben",
   "description": "keine Speicherung auf Datenbank",
   "start_url": "index.html",
